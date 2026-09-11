@@ -73,8 +73,8 @@ export function euclidean(a: Float32Array | number[], b: Float32Array | number[]
  * Distances below ~0.4 are near-certain matches, above ~0.78 are strangers.
  */
 export function distanceToConfidence(distance: number): number {
-  const best = 0.32;
-  const worst = 0.82;
+  const best = 0.30;
+  const worst = 0.62;
   const t = (worst - distance) / (worst - best);
   return Math.round(Math.max(0, Math.min(1, t)) * 100);
 }
