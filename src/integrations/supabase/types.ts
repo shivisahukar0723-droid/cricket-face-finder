@@ -14,7 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      cricket_players: {
+        Row: {
+          created_at: string
+          embeddings: Json
+          era: string
+          id: string
+          image_url: string
+          name: string
+          role: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          embeddings?: Json
+          era?: string
+          id?: string
+          image_url?: string
+          name: string
+          role?: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          embeddings?: Json
+          era?: string
+          id?: string
+          image_url?: string
+          name?: string
+          role?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
