@@ -70,11 +70,11 @@ export function euclidean(a: Float32Array | number[], b: Float32Array | number[]
 
 /**
  * Map a face-embedding distance onto a 0-100 confidence score.
- * Distances below ~0.30 are near-certain matches, above ~0.62 are strangers.
+ * Distances below ~0.30 are near-certain matches, above ~0.83 are strangers.
  */
 export function distanceToConfidence(distance: number): number {
   const best = 0.30;
-  const worst = 0.62;
+  const worst = 0.83;
   const t = (worst - distance) / (worst - best);
   return Math.round(Math.max(0, Math.min(1, t)) * 100);
 }
