@@ -7,17 +7,22 @@ export const MODEL_URL = "/models";
 export async function loadFaceModels(): Promise<void> {
   if (!loading) {
     loading = (async () => {
+      const tf = faceapi.tf as unknown as {
+        setBackend: (name: string) => Promise<boolean>;
+        getBackend: () => string;
+        ready: () => Promise<void>;
+      };
       const forced = (globalThis as { __FORCE_BACKEND?: string }).__FORCE_BACKEND;
       let ok = false;
       try {
-        ok = await faceapi.tf.setBackend(forced ?? "webgl");
+        ok = await tf.setBackend(forced ?? "webgl");
       } catch {
         ok = false;
       }
-      if (!ok || faceapi.tf.getBackend() !== (forced ?? "webgl")) {
-        await faceapi.tf.setBackend("cpu");
+      if (!ok || tf.getBackend() !== (forced ?? "webgl")) {
+        await tf.setBackend("cpu");
       }
-      await faceapi.tf.ready();
+      await tf.ready();
       await Promise.all([
         faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
         faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
