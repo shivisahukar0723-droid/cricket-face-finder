@@ -3,7 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { detectFaces, loadFaceModels, loadImage } from "@/lib/face";
-import { MATCH_THRESHOLD, rankPlayers, type Candidate, type PlayerRecord } from "@/lib/recognize";
+import {
+  DEFAULT_CALIBRATION,
+  rankPlayers,
+  type Calibration,
+  type Candidate,
+  type PlayerRecord,
+} from "@/lib/recognize";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
@@ -45,7 +51,7 @@ function usePlayers() {
     queryFn: async (): Promise<PlayerRecord[]> => {
       const { data, error } = await supabase
         .from("cricket_players")
-        .select("id, slug, name, role, era, image_url, embeddings")
+        .select("id, slug, name, role, era, image_url, embeddings, centroid, sample_count")
         .order("name");
       if (error) throw error;
       return (data ?? []) as unknown as PlayerRecord[];
@@ -54,8 +60,31 @@ function usePlayers() {
   });
 }
 
+function useCalibration() {
+  return useQuery({
+    queryKey: ["recognition-model"],
+    queryFn: async (): Promise<Calibration> => {
+      const { data, error } = await supabase
+        .from("recognition_model")
+        .select("calibration")
+        .eq("is_active", true)
+        .order("version", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      const cal = (data?.calibration ?? null) as Partial<Calibration> | null;
+      return cal && typeof cal.a === "number" && typeof cal.b === "number"
+        ? { a: cal.a, b: cal.b, threshold: cal.threshold ?? DEFAULT_CALIBRATION.threshold }
+        : DEFAULT_CALIBRATION;
+    },
+    staleTime: Infinity,
+  });
+}
+
 function Home() {
   const players = usePlayers();
+  const calibration = useCalibration();
+
   const [phase, setPhase] = useState<Phase>("idle");
   const [message, setMessage] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -133,7 +162,11 @@ function Home() {
         }
 
         const primary = faces[0]!;
-        const ranked = rankPlayers(primary.descriptor, players.data ?? []).slice(0, 4);
+        const ranked = rankPlayers(
+          primary.descriptor,
+          players.data ?? [],
+          calibration.data ?? DEFAULT_CALIBRATION,
+        ).slice(0, 4);
         setAnalysis({
           faceCount: faces.length,
           box: primary.box,
@@ -146,7 +179,7 @@ function Home() {
         setMessage("That image couldn't be read. It may be corrupt — try a different photo.");
       }
     },
-    [players.data],
+    [players.data, calibration.data],
   );
 
   const onDrop = (e: React.DragEvent) => {
@@ -157,7 +190,8 @@ function Home() {
   };
 
   const best = analysis?.candidates[0];
-  const isMatch = !!best && best.confidence >= MATCH_THRESHOLD;
+  const thresholdPct = Math.round((calibration.data ?? DEFAULT_CALIBRATION).threshold * 100);
+  const isMatch = !!best && best.confidence >= thresholdPct;
 
   return (
     <main className="mx-auto w-full max-w-5xl px-5 pb-24 pt-10 sm:px-8">
@@ -293,7 +327,7 @@ function Home() {
           {phase === "done" && analysis && analysis.faceCount > 0 && !isMatch && (
             <EmptyState
               title="Player not recognised"
-              body={`Confidence below the ${MATCH_THRESHOLD}% threshold — this face doesn't match anyone in the squad list.`}
+              body={`Confidence below the ${thresholdPct}% threshold — this face doesn't match anyone in the squad list.`}
               candidates={analysis.candidates.slice(0, 3)}
             />
           )}
