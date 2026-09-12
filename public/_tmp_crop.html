@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+  <body>
+    <script type="module">
+      import * as faceapi from "/node_modules/@vladmandic/face-api/dist/face-api.esm.js";
+      window.__ready = (async () => {
+        await faceapi.nets.ssdMobilenetv1.loadFromUri("/models");
+        await faceapi.nets.faceLandmark68Net.loadFromUri("/models");
+        await faceapi.nets.faceRecognitionNet.loadFromUri("/models");
+        return true;
+      })();
+      window.__analyse = async (src) => {
+        const img = await faceapi.fetchImage(src);
+        const res = await faceapi
+          .detectAllFaces(img, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.3 }))
+          .withFaceLandmarks()
+          .withFaceDescriptors();
+        return {
+          w: img.naturalWidth,
+          h: img.naturalHeight,
+          faces: res.map((r) => ({
+            box: { x: r.detection.box.x, y: r.detection.box.y, w: r.detection.box.width, h: r.detection.box.height },
+            score: r.detection.score,
+            descriptor: Array.from(r.descriptor),
+          })),
+        };
+      };
+    </script>
+  </body>
+</html>
