@@ -132,7 +132,7 @@ function Home() {
           return;
         }
 
-        const primary = faces[0];
+        const primary = faces[0]!;
         const ranked = rankPlayers(primary.descriptor, players.data ?? []).slice(0, 4);
         setAnalysis({
           faceCount: faces.length,
