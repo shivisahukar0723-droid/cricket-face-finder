@@ -45,9 +45,8 @@ type Analysis = {
   elapsedMs: number;
 };
 
-function usePlayers() {
-  return useQuery({
-    queryKey: ["cricket-players"],
+const playersQuery = {
+    queryKey: ["cricket-players"] as const,
     queryFn: async (): Promise<PlayerRecord[]> => {
       const { data, error } = await supabase
         .from("cricket_players")
@@ -57,12 +56,10 @@ function usePlayers() {
       return (data ?? []) as unknown as PlayerRecord[];
     },
     staleTime: Infinity,
-  });
-}
+};
 
-function useCalibration() {
-  return useQuery({
-    queryKey: ["recognition-model"],
+const calibrationQuery = {
+    queryKey: ["recognition-model"] as const,
     queryFn: async (): Promise<Calibration> => {
       const { data, error } = await supabase
         .from("recognition_model")
