@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       cricket_players: {
         Row: {
+          centroid: Json
           created_at: string
           embeddings: Json
           era: string
@@ -23,10 +24,12 @@ export type Database = {
           image_url: string
           name: string
           role: string
+          sample_count: number
           slug: string
           updated_at: string
         }
         Insert: {
+          centroid?: Json
           created_at?: string
           embeddings?: Json
           era?: string
@@ -34,10 +37,12 @@ export type Database = {
           image_url?: string
           name: string
           role?: string
+          sample_count?: number
           slug: string
           updated_at?: string
         }
         Update: {
+          centroid?: Json
           created_at?: string
           embeddings?: Json
           era?: string
@@ -45,8 +50,39 @@ export type Database = {
           image_url?: string
           name?: string
           role?: string
+          sample_count?: number
           slug?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      recognition_model: {
+        Row: {
+          calibration: Json
+          created_at: string
+          id: string
+          is_active: boolean
+          metrics: Json
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          calibration?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          metrics?: Json
+          updated_at?: string
+          version: number
+        }
+        Update: {
+          calibration?: Json
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          metrics?: Json
+          updated_at?: string
+          version?: number
         }
         Relationships: []
       }
