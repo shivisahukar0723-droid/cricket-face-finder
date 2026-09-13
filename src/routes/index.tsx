@@ -59,28 +59,27 @@ const playersQuery = {
 };
 
 const calibrationQuery = {
-    queryKey: ["recognition-model"] as const,
-    queryFn: async (): Promise<Calibration> => {
-      const { data, error } = await supabase
-        .from("recognition_model")
-        .select("calibration")
-        .eq("is_active", true)
-        .order("version", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (error) throw error;
-      const cal = (data?.calibration ?? null) as Partial<Calibration> | null;
-      return cal && typeof cal.a === "number" && typeof cal.b === "number"
-        ? { a: cal.a, b: cal.b, threshold: cal.threshold ?? DEFAULT_CALIBRATION.threshold }
-        : DEFAULT_CALIBRATION;
-    },
-    staleTime: Infinity,
-  });
-}
+  queryKey: ["recognition-model"] as const,
+  queryFn: async (): Promise<Calibration> => {
+    const { data, error } = await supabase
+      .from("recognition_model")
+      .select("calibration")
+      .eq("is_active", true)
+      .order("version", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    const cal = (data?.calibration ?? null) as Partial<Calibration> | null;
+    return cal && typeof cal.a === "number" && typeof cal.b === "number"
+      ? { a: cal.a, b: cal.b, threshold: cal.threshold ?? DEFAULT_CALIBRATION.threshold }
+      : DEFAULT_CALIBRATION;
+  },
+  staleTime: Infinity,
+};
 
 function Home() {
-  const players = usePlayers();
-  const calibration = useCalibration();
+  const players = useQuery(playersQuery);
+  const calibration = useQuery(calibrationQuery);
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [message, setMessage] = useState<string | null>(null);
