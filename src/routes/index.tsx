@@ -236,7 +236,7 @@ function Home() {
                   : "border-border bg-background/30 hover:border-primary/60"
               }`}
             >
-              <span className="text-4xl">🏏</span>
+              <img src={logoUrl} alt="" width={768} height={768} className="h-12 w-12 rounded-xl opacity-90" />
               <span className="font-display text-2xl">Drag a photo here</span>
               <span className="text-sm text-muted-foreground">
                 or click to browse · JPG, PNG or WebP · up to 8 MB
