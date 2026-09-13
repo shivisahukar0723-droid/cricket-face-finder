@@ -1,29 +1,60 @@
-# Welcome to your Lovable project
+# Cricket Face ID
 
-This project was built with [Lovable](https://lovable.dev).
+Identify Indian cricket players from a photo — entirely in your browser. Drop in a picture and the app detects the face, matches it against a trained gallery of 18 Indian cricketers (past and present), and shows the player's name with a calibrated confidence score.
 
-## Build with Lovable
+**No sign-up. Your photo never leaves your device.**
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+## Players recognised
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+Virat Kohli · Rohit Sharma · MS Dhoni · Sachin Tendulkar · Jasprit Bumrah · Ravindra Jadeja · KL Rahul · Hardik Pandya · Rishabh Pant · Shubman Gill · Mohammed Shami · Yuzvendra Chahal · Suryakumar Yadav · Ravichandran Ashwin · Shikhar Dhawan · Anil Kumble · Rahul Dravid · Sourav Ganguly
 
-## Development
+## How it works
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+1. **Upload** — drag-and-drop or file picker (JPG, PNG, WebP, up to 8 MB).
+2. **Face detection** — SSD MobileNet finds all faces; the largest is used, and the count is shown when several are found.
+3. **Embedding** — a ResNet-style recognition network (via `@vladmandic/face-api` on TensorFlow.js, WebGL with CPU fallback) turns the face into a 128-dimensional descriptor.
+4. **Matching** — the descriptor is compared against per-player exemplar galleries and centroids stored in Supabase. Scores blend nearest-exemplar distance, top-3 mean distance and centroid distance, with a runner-up margin penalty for ambiguous faces.
+5. **Calibration** — a logistic model (parameters stored in Supabase, fetched live) converts the blended distance into a 0–100% confidence. Matches below the calibrated threshold (~68%) are shown as "Player not recognised" with the closest alternatives.
 
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+## Model training & evaluation
+
+- **Reference set**: 216 freely licensed images from Wikimedia Commons / Wikipedia (`public/players/`), yielding 684 detected faces.
+- **Labelling**: faces were assigned to players conservatively using thumbnail identity anchors plus nearest-anchor distance filtering; mislabelled and contaminated images were discarded.
+- **Classifier**: per-player exemplar galleries + centroids with a grid-search-fitted logistic calibration over genuine vs. hardest-impostor distances.
+- **Held-out evaluation (80/20)**: ~94% top-1 accuracy; the published operating threshold was chosen for zero measured false accepts.
+- **Model artefacts** (exemplars, centroids, calibration, metrics) are versioned in the `recognition_model` table in Supabase; the app always loads the active version.
+
+## Tech stack
+
+| Layer      | Choice                                                        |
+| ---------- | ------------------------------------------------------------- |
+| Frontend   | React 19 + TypeScript, TanStack Start (SSR), Tailwind CSS v4  |
+| ML         | `@vladmandic/face-api` (TensorFlow.js), models in `public/models/` |
+| Data       | Supabase (Lovable Cloud) — players, embeddings, calibration   |
+| Processing | 100% client-side inference; Supabase is read-only from the browser |
+
+## Project layout
+
+```
+src/routes/index.tsx   Upload UI, analysis flow, verdict display
+src/lib/face.ts        Model loading, detection, descriptors (WebGL → CPU)
+src/lib/recognize.ts   Gallery distance, blended ranking, logistic calibration
+src/data/roster.ts     The 18-player roster
+public/players/        Reference photos (Wikimedia Commons, freely licensed)
+public/thumbs/         Player thumbnails shown in results
+public/models/         face-api model weights (detector, landmarks, recognition)
 ```
 
-## Built with
+## Database
 
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
+- `cricket_players` — player metadata, thumbnail URL, exemplar embeddings (JSONB), centroid, sample count. Public read, service-role write.
+- `recognition_model` — versioned calibration parameters, metrics, active flag. Public read of the active row.
+
+## Performance notes
+
+- Inference on a WebGL-capable device: ~2–3 s. On CPU-only (e.g. headless environments): ~15–20 s.
+- Face models (~15 MB) load once in the background on page open; "ENGINE READY" appears when loaded.
+
+## Privacy
+
+Uploaded photos are processed locally in the browser and are never uploaded or stored. Reference photos are freely licensed images from Wikimedia Commons.
