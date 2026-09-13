@@ -192,6 +192,13 @@ function Home() {
   return (
     <main className="mx-auto w-full max-w-5xl px-5 pb-24 pt-10 sm:px-8">
       <header className="mb-10 text-center">
+        <img
+          src={logoUrl}
+          alt="Cricket Face ID logo"
+          width={768}
+          height={768}
+          className="mx-auto mb-4 h-20 w-20 rounded-2xl sm:h-24 sm:w-24"
+        />
         <p className="text-xs font-semibold uppercase tracking-[0.35em] text-primary">
           Player recognition
         </p>
