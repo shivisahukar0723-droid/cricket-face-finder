@@ -11,6 +11,7 @@ import {
   type PlayerRecord,
 } from "@/lib/recognize";
 import { Button } from "@/components/ui/button";
+import logoUrl from "@/assets/logo.png";
 
 export const Route = createFileRoute("/")({
   ssr: false,
