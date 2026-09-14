@@ -164,6 +164,7 @@ function Home() {
           players.data ?? [],
           calibration.data ?? DEFAULT_CALIBRATION,
         ).slice(0, 4);
+        console.log('DBG players', players.data?.length, 'cal', JSON.stringify(calibration.data), 'ranked', JSON.stringify(ranked.map(r=>[r.player.slug,r.distance,r.confidence])));
         setAnalysis({
           faceCount: faces.length,
           box: primary.box,
