@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { detectFaces, loadFaceModels, loadImage } from "@/lib/face";
@@ -43,6 +43,7 @@ type Analysis = {
   faceCount: number;
   box: { x: number; y: number; width: number; height: number } | null;
   candidates: Candidate[];
+  thresholdPct: number;
   elapsedMs: number;
 };
 
@@ -79,6 +80,7 @@ const calibrationQuery = {
 };
 
 function Home() {
+  const queryClient = useQueryClient();
   const players = useQuery(playersQuery);
   const calibration = useQuery(calibrationQuery);
 
@@ -152,6 +154,7 @@ function Home() {
             faceCount: 0,
             box: null,
             candidates: [],
+            thresholdPct: Math.round((calibration.data ?? DEFAULT_CALIBRATION).threshold * 100),
             elapsedMs: performance.now() - started,
           });
           setPhase("done");
@@ -159,15 +162,18 @@ function Home() {
         }
 
         const primary = faces[0]!;
-        const ranked = rankPlayers(
-          primary.descriptor,
-          players.data ?? [],
-          calibration.data ?? DEFAULT_CALIBRATION,
-        ).slice(0, 4);
+        // Wait for the trained squad + calibration to be in hand before scoring,
+        // otherwise a fast upload scores against an empty gallery.
+        const [squad, cal] = await Promise.all([
+          queryClient.ensureQueryData(playersQuery),
+          queryClient.ensureQueryData(calibrationQuery),
+        ]);
+        const ranked = rankPlayers(primary.descriptor, squad, cal).slice(0, 4);
         setAnalysis({
           faceCount: faces.length,
           box: primary.box,
           candidates: ranked,
+          thresholdPct: Math.round(cal.threshold * 100),
           elapsedMs: performance.now() - started,
         });
         setPhase("done");
@@ -176,8 +182,9 @@ function Home() {
         setMessage("That image couldn't be read. It may be corrupt — try a different photo.");
       }
     },
-    [players.data, calibration.data],
+    [queryClient],
   );
+
 
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -187,7 +194,8 @@ function Home() {
   };
 
   const best = analysis?.candidates[0];
-  const thresholdPct = Math.round((calibration.data ?? DEFAULT_CALIBRATION).threshold * 100);
+  const thresholdPct =
+    analysis?.thresholdPct ?? Math.round((calibration.data ?? DEFAULT_CALIBRATION).threshold * 100);
   const isMatch = !!best && best.confidence >= thresholdPct;
 
   return (

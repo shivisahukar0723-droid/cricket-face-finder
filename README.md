@@ -58,3 +58,22 @@ public/models/         face-api model weights (detector, landmarks, recognition)
 ## Privacy
 
 Uploaded photos are processed locally in the browser and are never uploaded or stored. Reference photos are freely licensed images from Wikimedia Commons.
+
+## Deploy to Vercel
+
+The build auto-detects the hosting platform, so no config rewrite is needed — `vercel.json` is included only to pin framework detection.
+
+1. Push this repo to GitHub and import it in Vercel (**Add New → Project**).
+2. Settings:
+   - Build command: `vite build`
+   - Install command: `npm install` (or `bun install`)
+3. Add these Environment Variables (Production + Preview):
+
+   | Name | Value |
+   | ---- | ----- |
+   | `VITE_SUPABASE_URL` | `https://<project-ref>.supabase.co` |
+   | `VITE_SUPABASE_PUBLISHABLE_KEY` | the Supabase anon/publishable key |
+   | `VITE_SUPABASE_PROJECT_ID` | the Supabase project ref |
+
+   Both Supabase values are public by design — the database is read-only from the browser via RLS. Never add the service-role key.
+4. Deploy. Tables `cricket_players` and `recognition_model` must already exist in the Supabase project (see `supabase/migrations/`).
