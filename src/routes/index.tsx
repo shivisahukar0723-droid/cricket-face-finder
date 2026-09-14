@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { detectFaces, loadFaceModels, loadImage } from "@/lib/face";
@@ -43,6 +43,7 @@ type Analysis = {
   faceCount: number;
   box: { x: number; y: number; width: number; height: number } | null;
   candidates: Candidate[];
+  thresholdPct: number;
   elapsedMs: number;
 };
 
@@ -79,6 +80,7 @@ const calibrationQuery = {
 };
 
 function Home() {
+  const queryClient = useQueryClient();
   const players = useQuery(playersQuery);
   const calibration = useQuery(calibrationQuery);
 
@@ -152,6 +154,7 @@ function Home() {
             faceCount: 0,
             box: null,
             candidates: [],
+            thresholdPct: Math.round((calibration.data ?? DEFAULT_CALIBRATION).threshold * 100),
             elapsedMs: performance.now() - started,
           });
           setPhase("done");
@@ -191,7 +194,8 @@ function Home() {
   };
 
   const best = analysis?.candidates[0];
-  const thresholdPct = Math.round((calibration.data ?? DEFAULT_CALIBRATION).threshold * 100);
+  const thresholdPct =
+    analysis?.thresholdPct ?? Math.round((calibration.data ?? DEFAULT_CALIBRATION).threshold * 100);
   const isMatch = !!best && best.confidence >= thresholdPct;
 
   return (
