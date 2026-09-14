@@ -159,16 +159,18 @@ function Home() {
         }
 
         const primary = faces[0]!;
-        const ranked = rankPlayers(
-          primary.descriptor,
-          players.data ?? [],
-          calibration.data ?? DEFAULT_CALIBRATION,
-        ).slice(0, 4);
-        console.log('DBG status', players.status, players.fetchStatus, JSON.stringify(players.error)?.slice(0,200), 'players', players.data?.length, 'cal', JSON.stringify(calibration.data), 'ranked', JSON.stringify(ranked.map(r=>[r.player.slug,r.distance,r.confidence])));
+        // Wait for the trained squad + calibration to be in hand before scoring,
+        // otherwise a fast upload scores against an empty gallery.
+        const [squad, cal] = await Promise.all([
+          queryClient.ensureQueryData(playersQuery),
+          queryClient.ensureQueryData(calibrationQuery),
+        ]);
+        const ranked = rankPlayers(primary.descriptor, squad, cal).slice(0, 4);
         setAnalysis({
           faceCount: faces.length,
           box: primary.box,
           candidates: ranked,
+          thresholdPct: Math.round(cal.threshold * 100),
           elapsedMs: performance.now() - started,
         });
         setPhase("done");
@@ -177,8 +179,9 @@ function Home() {
         setMessage("That image couldn't be read. It may be corrupt — try a different photo.");
       }
     },
-    [players.data, calibration.data],
+    [queryClient],
   );
+
 
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault();
